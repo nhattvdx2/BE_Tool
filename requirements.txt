@@ -9,3 +9,4 @@ python-multipart==0.0.20
 python-dotenv==1.2.1
 SQLAlchemy==2.0.41
 uvicorn[standard]==0.34.3
+psycopg2-binary==2.9.10
