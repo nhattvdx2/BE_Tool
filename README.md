@@ -12,7 +12,7 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env
 python -m scripts.create_user admin
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --env-file .env
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Các biến trong `.env.example` là tài liệu tham khảo. Có thể export chúng trước khi chạy:
@@ -21,6 +21,13 @@ Các biến trong `.env.example` là tài liệu tham khảo. Có thể export c
 export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/be_tool
 export CORS_ORIGINS=http://localhost:4200
 ```
+
+Backend và CLI tự đọc cấu hình từ file `.env`. Không commit file này vì nó chứa
+thông tin đăng nhập PostgreSQL.
+
+Nếu PostgreSQL chạy trên VPS, PostgreSQL phải listen trên IP mạng, cho phép IP
+của máy chạy backend trong `pg_hba.conf`, và firewall/security group phải mở
+cổng `5432` cho đúng IP nguồn. Không nên mở cổng này cho toàn bộ Internet.
 
 Khi backend khởi động, bảng `accounts` sẽ được tạo nếu chưa tồn tại. Lệnh
 `python -m scripts.create_user admin` tạo tài khoản mới hoặc cập nhật mật khẩu
