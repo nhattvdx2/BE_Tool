@@ -1,80 +1,111 @@
-# Account Verification Backend
+# Text-to-Speech and Voice Clone Backend
 
-FastAPI backend dùng để kiểm tra tài khoản và mật khẩu do dự án Angular/Electron gửi lên.
-Tài khoản được lưu trong PostgreSQL; mật khẩu chỉ được lưu dưới dạng PBKDF2 hash.
+Backend FastAPI cho frontend Angular/Electron, dùng PostgreSQL, SQLAlchemy,
+Alembic, JWT và local file storage.
 
-## Cài đặt và chạy
+## Công nghệ
+
+- Python 3.11+
+- FastAPI + Pydantic
+- SQLAlchemy 2 + Alembic
+- PostgreSQL + Psycopg 3
+- JWT access token
+- bcrypt password hashing
+
+## Cấu trúc
+
+```text
+app/
+  api/       # routes và dependencies
+  core/      # settings và security
+  db/        # SQLAlchemy engine/session
+  models/    # ORM models
+  schemas/   # Pydantic request/response
+  services/  # business logic
+  utils/     # local file storage
+alembic/     # database migrations
+scripts/     # admin CLI
+tests/       # API/service tests
+```
+
+## Cài đặt
 
 ```bash
-docker compose up -d postgres
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env
-python -m scripts.create_user admin
+```
+
+Cập nhật `DATABASE_URL` và `JWT_SECRET_KEY` trong `.env`. URL SQLAlchemy dùng
+Psycopg 3 có dạng:
+
+```env
+DATABASE_URL=postgresql+psycopg://user:password@host:5432/database
+JWT_SECRET_KEY=a-long-random-secret
+CORS_ORIGINS=http://localhost:4200
+```
+
+Không commit file `.env`.
+
+## Migration và chạy API
+
+```bash
+alembic upgrade head
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Các biến trong `.env.example` là tài liệu tham khảo. Có thể export chúng trước khi chạy:
+Swagger: `http://127.0.0.1:8000/docs`
+
+## Quy trình tài khoản
+
+1. Gọi `POST /api/auth/register`. User được tạo với `is_active=false`.
+2. Hai bản ghi giới hạn được tạo tương ứng trong `voice_clones` và
+   `voice_designs`.
+3. Admin kích hoạt tài khoản, cấp quyền và đặt limit bằng CLI:
 
 ```bash
-export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/be_tool
-export CORS_ORIGINS=http://localhost:4200
+python -m scripts.create_user demo \
+  --activate \
+  --clone-voice \
+  --design-voice \
+  --clone-limit 10 \
+  --design-limit 5
 ```
 
-Backend và CLI tự đọc cấu hình từ file `.env`. Không commit file này vì nó chứa
-thông tin đăng nhập PostgreSQL.
+4. Gọi `POST /api/auth/login` để nhận JWT.
+5. Gửi JWT ở header `Authorization: Bearer <access_token>`.
 
-Nếu PostgreSQL chạy trên VPS, PostgreSQL phải listen trên IP mạng, cho phép IP
-của máy chạy backend trong `pg_hba.conf`, và firewall/security group phải mở
-cổng `5432` cho đúng IP nguồn. Không nên mở cổng này cho toàn bộ Internet.
+## API
 
-Khi backend khởi động, bảng `accounts` sẽ được tạo nếu chưa tồn tại. Lệnh
-`python -m scripts.create_user admin` tạo tài khoản mới hoặc cập nhật mật khẩu
-của tài khoản hiện có.
+| Method | Endpoint | Auth | Mô tả |
+| --- | --- | --- | --- |
+| POST | `/api/auth/register` | Không | Đăng ký user chưa kích hoạt |
+| POST | `/api/auth/login` | Không | Đăng nhập và nhận JWT |
+| POST | `/api/auth/changepassword` | JWT | Đổi mật khẩu |
+| POST | `/api/auth/acceptFuntion` | JWT | Kiểm tra quyền màn hình |
+| GET | `/api/auth/me` | JWT | Thông tin user hiện tại |
+| GET | `/api/voices/numberLimit` | JWT | Lấy giới hạn theo `username`, `screenid` |
+| POST | `/api/voices/upload` | JWT | Upload file local theo quyền màn hình |
 
-Mở tài liệu API tại `http://127.0.0.1:8000/docs`.
+`screenid` hỗ trợ `clone_voice` và `design_voice`.
 
-## API xác thực
+Ví dụ lấy limit:
 
 ```http
-POST /api/auth/verify
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "your-password"
-}
+GET /api/voices/numberLimit?username=demo&screenid=clone_voice
+Authorization: Bearer <access_token>
 ```
 
-Thành công trả HTTP `200`:
+## PostgreSQL VPS
 
-```json
-{
-  "valid": true,
-  "user": {
-    "username": "admin"
-  }
-}
-```
-
-Sai tài khoản hoặc mật khẩu trả HTTP `401`.
-
-## Gọi từ Angular
-
-```ts
-verify(username: string, password: string) {
-  return this.http.post<{ valid: boolean; user: { username: string } }>(
-    'http://127.0.0.1:8000/api/auth/verify',
-    { username, password }
-  );
-}
-```
-
-Không lưu mật khẩu trong Angular/Electron hoặc dạng plaintext trong PostgreSQL.
-Khi deploy qua mạng, đặt API sau HTTPS và thay thông tin đăng nhập database mặc định.
+PostgreSQL phải listen trên IP mạng, cho phép IP máy chạy backend trong
+`pg_hba.conf`, và firewall/security group phải mở cổng `5432` chỉ cho IP nguồn
+cần thiết. Không mở PostgreSQL cho toàn bộ Internet.
 
 ## Test
+
+Test dùng SQLite in-memory, không tác động PostgreSQL:
 
 ```bash
 pytest
