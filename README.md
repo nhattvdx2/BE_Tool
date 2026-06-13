@@ -1,11 +1,12 @@
 # Account Verification Backend
 
 FastAPI backend dùng để kiểm tra tài khoản và mật khẩu do dự án Angular/Electron gửi lên.
-Tài khoản được lưu trong SQLite; mật khẩu chỉ được lưu dưới dạng PBKDF2 hash.
+Tài khoản được lưu trong PostgreSQL; mật khẩu chỉ được lưu dưới dạng PBKDF2 hash.
 
 ## Cài đặt và chạy
 
 ```bash
+docker compose up -d postgres
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -17,9 +18,13 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --env-file .env
 Các biến trong `.env.example` là tài liệu tham khảo. Có thể export chúng trước khi chạy:
 
 ```bash
-export DATABASE_PATH=data/accounts.sqlite3
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/be_tool
 export CORS_ORIGINS=http://localhost:4200
 ```
+
+Khi backend khởi động, bảng `accounts` sẽ được tạo nếu chưa tồn tại. Lệnh
+`python -m scripts.create_user admin` tạo tài khoản mới hoặc cập nhật mật khẩu
+của tài khoản hiện có.
 
 Mở tài liệu API tại `http://127.0.0.1:8000/docs`.
 
@@ -59,7 +64,8 @@ verify(username: string, password: string) {
 }
 ```
 
-Không lưu mật khẩu trong Angular/Electron. Khi deploy qua mạng, đặt API sau HTTPS.
+Không lưu mật khẩu trong Angular/Electron hoặc dạng plaintext trong PostgreSQL.
+Khi deploy qua mạng, đặt API sau HTTPS và thay thông tin đăng nhập database mặc định.
 
 ## Test
 

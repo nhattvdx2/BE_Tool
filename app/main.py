@@ -8,7 +8,7 @@ from app.database import AccountStore
 from app.schemas import Credentials, VerifiedUser, VerifyResponse
 
 settings = get_settings()
-account_store = AccountStore(settings.database_path)
+account_store = AccountStore(settings.database_url)
 
 
 @asynccontextmanager

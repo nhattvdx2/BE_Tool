@@ -19,7 +19,7 @@ def main() -> None:
     if not password:
         parser.error("password cannot be empty")
 
-    store = AccountStore(get_settings().database_path)
+    store = AccountStore(get_settings().database_url)
     store.initialize()
     store.upsert_account(username, password)
     print(f"Account '{username}' is ready.")
