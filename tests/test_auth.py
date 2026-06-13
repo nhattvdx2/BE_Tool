@@ -28,7 +28,7 @@ def login(client, username="demo", password="password123"):
 def test_register_creates_inactive_user_and_voice_limits(client, db):
     response = register(client)
 
-    assert response.status_code == 201
+    assert response.status_code == 200
     assert response.json()["is_active"] is False
     user = db.query(User).filter_by(username="demo").one()
     assert db.query(VoiceClone).filter_by(user_id=user.id).count() == 1
@@ -64,5 +64,5 @@ def test_me_and_change_password(client, db):
 
 
 def test_duplicate_registration_is_rejected(client):
-    assert register(client).status_code == 201
+    assert register(client).status_code == 200
     assert register(client).status_code == 409
