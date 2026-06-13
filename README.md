@@ -57,6 +57,16 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 Swagger: `http://127.0.0.1:8000/docs`
 
+Kiểm tra tiến trình API và database/schema:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/health/ready
+```
+
+`/health` chỉ xác nhận process FastAPI đang chạy. `/health/ready` chỉ trả `200`
+khi backend kết nối được database và migration đã tạo bảng `users`.
+
 ## Quy trình tài khoản
 
 1. Gọi `POST /api/auth/register`. User được tạo với `is_active=false`.
