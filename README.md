@@ -86,6 +86,10 @@ python -m scripts.create_user demo \
 4. Gọi `POST /api/auth/login` để nhận JWT.
 5. Gửi JWT ở header `Authorization: Bearer <access_token>`.
 
+Login trả `401` khi username/mật khẩu sai và trả `403` khi tài khoản chưa được
+kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_voice` và
+`design_voice`.
+
 ## API
 
 | Method | Endpoint | Auth | Mô tả |

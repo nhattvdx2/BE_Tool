@@ -50,7 +50,7 @@ def register_user(db: Session, payload: RegisterRequest) -> User:
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
     user = get_user_by_username(db, username)
-    if not user or not user.is_active or not verify_password(password, user.password_hash):
+    if not user or not verify_password(password, user.password_hash):
         return None
     return user
 

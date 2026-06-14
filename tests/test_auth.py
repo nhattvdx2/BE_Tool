@@ -35,16 +35,40 @@ def test_register_creates_inactive_user_and_voice_limits(client, db):
     assert db.query(VoiceDesign).filter_by(user_id=user.id).count() == 1
 
 
-def test_login_requires_active_user_and_returns_jwt(client, db):
+def test_login_rejects_inactive_user_separately(client, db):
     register(client)
-    assert login(client).status_code == 401
+    response = login(client)
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Account is not active"}
+
+
+def test_login_rejects_invalid_password(client, db):
+    register(client)
     activate(db)
+
+    response = login(client, password="wrong-password")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid username or password"}
+
+
+def test_login_returns_reduced_user_and_jwt(client, db):
+    register(client)
+    user = activate(db, clone_voice=True)
 
     response = login(client)
 
     assert response.status_code == 200
-    assert response.json()["token_type"] == "bearer"
-    assert response.json()["access_token"]
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["access_token"]
+    assert body["user"] == {
+        "id": user.id,
+        "username": "demo",
+        "clone_voice": True,
+        "design_voice": False,
+    }
 
 
 def test_me_and_change_password(client, db):

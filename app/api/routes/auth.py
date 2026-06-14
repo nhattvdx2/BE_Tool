@@ -6,6 +6,7 @@ from app.schemas.auth import (
     AcceptFunctionRequest,
     ChangePasswordRequest,
     FunctionAccessResponse,
+    LoginUserResponse,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
@@ -34,11 +35,16 @@ def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials or inactive account",
+            detail="Invalid username or password",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is not active",
         )
     return TokenResponse(
         access_token=create_access_token(user.id, user.username),
-        user=UserResponse.model_validate(user),
+        user=LoginUserResponse.model_validate(user),
     )
 
 

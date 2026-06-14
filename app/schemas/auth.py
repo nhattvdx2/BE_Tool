@@ -38,10 +38,19 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
+class LoginUserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    clone_voice: bool
+    design_voice: bool
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse
+    user: LoginUserResponse
 
 
 class FunctionAccessResponse(BaseModel):
