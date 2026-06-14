@@ -14,7 +14,8 @@ class User(TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     clone_voice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    design_voice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    design_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    gen_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 

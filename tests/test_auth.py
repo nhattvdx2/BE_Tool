@@ -30,6 +30,9 @@ def test_register_creates_inactive_user_and_voice_limits(client, db):
 
     assert response.status_code == 200
     assert response.json()["is_active"] is False
+    assert response.json()["clone_voice"] is False
+    assert response.json()["design_voice"] is True
+    assert response.json()["gen_voice"] is True
     user = db.query(User).filter_by(username="demo").one()
     assert db.query(VoiceClone).filter_by(user_id=user.id).count() == 1
     assert db.query(VoiceDesign).filter_by(user_id=user.id).count() == 1
@@ -67,7 +70,8 @@ def test_login_returns_reduced_user_and_jwt(client, db):
         "id": user.id,
         "username": "demo",
         "clone_voice": True,
-        "design_voice": False,
+        "design_voice": True,
+        "gen_voice": True,
     }
 
 

@@ -14,4 +14,9 @@ def get_number_limit(user: User, screenid: str) -> int:
     screen = screenid.strip().lower()
     if screen in {"clone_voice", "voice_clone"}:
         return user.voice_clone.number_limit
-    return user.voice_design.number_limit
+    if screen in {"design_voice", "voice_design"}:
+        return user.voice_design.number_limit
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="numberLimit is not supported for this screen",
+    )

@@ -32,6 +32,7 @@ class UserResponse(BaseModel):
     email: str
     clone_voice: bool
     design_voice: bool
+    gen_voice: bool
     is_active: bool
     is_default: bool
     created_at: datetime
@@ -45,6 +46,7 @@ class LoginUserResponse(BaseModel):
     username: str
     clone_voice: bool
     design_voice: bool
+    gen_voice: bool
 
 
 class TokenResponse(BaseModel):

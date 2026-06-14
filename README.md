@@ -87,8 +87,8 @@ python -m scripts.create_user demo \
 5. Gửi JWT ở header `Authorization: Bearer <access_token>`.
 
 Login trả `401` khi username/mật khẩu sai và trả `403` khi tài khoản chưa được
-kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_voice` và
-`design_voice`.
+kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_voice`,
+`design_voice` và `gen_voice`.
 
 ## API
 
@@ -102,7 +102,8 @@ kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_vo
 | GET | `/api/voices/numberLimit` | JWT | Lấy giới hạn theo `username`, `screenid` |
 | POST | `/api/voices/upload` | JWT | Upload file local theo quyền màn hình |
 
-`screenid` hỗ trợ `clone_voice` và `design_voice`.
+`screenid` kiểm tra quyền hỗ trợ `clone_voice`, `design_voice` và `gen_voice`.
+API `numberLimit` hiện chỉ hỗ trợ `clone_voice` và `design_voice`.
 
 Ví dụ lấy limit:
 

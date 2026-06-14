@@ -27,7 +27,7 @@ def test_accept_function_and_number_limit(client, db):
     assert limit.json()["number_limit"] == 12
 
 
-def test_number_limit_rejects_missing_permission(client, db):
+def test_design_voice_is_enabled_by_default(client, db):
     register(client)
     activate(db)
     token = login(client).json()["access_token"]
@@ -38,7 +38,29 @@ def test_number_limit_rejects_missing_permission(client, db):
         params={"username": "demo", "screenid": "design_voice"},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 200
+    assert response.json()["number_limit"] == 0
+
+
+def test_gen_voice_has_access_but_no_number_limit(client, db):
+    register(client)
+    activate(db)
+    token = login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    access = client.post(
+        "/api/auth/acceptFuntion",
+        headers=headers,
+        json={"username": "demo", "screenid": "gen_voice"},
+    )
+    limit = client.get(
+        "/api/voices/numberLimit",
+        headers=headers,
+        params={"username": "demo", "screenid": "gen_voice"},
+    )
+
+    assert access.json()["allowed"] is True
+    assert limit.status_code == 400
 
 
 def test_upload_voice_file(client, db, tmp_path, monkeypatch):

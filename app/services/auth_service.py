@@ -38,7 +38,8 @@ def register_user(db: Session, payload: RegisterRequest) -> User:
         password_hash=hash_password(payload.password),
         is_active=False,
         clone_voice=False,
-        design_voice=False,
+        design_voice=True,
+        gen_voice=True,
     )
     user.voice_clone = VoiceClone(number_limit=settings.default_clone_voice_limit)
     user.voice_design = VoiceDesign(number_limit=settings.default_design_voice_limit)
@@ -74,6 +75,8 @@ def has_screen_access(user: User, screenid: str) -> bool:
         "voice_clone": user.clone_voice,
         "design_voice": user.design_voice,
         "voice_design": user.design_voice,
+        "gen_voice": user.gen_voice,
+        "voice_gen": user.gen_voice,
     }
     if screen not in permissions:
         raise HTTPException(

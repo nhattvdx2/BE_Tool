@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--activate", action="store_true")
     parser.add_argument("--clone-voice", action="store_true")
     parser.add_argument("--design-voice", action="store_true")
+    parser.add_argument("--gen-voice", action="store_true")
     parser.add_argument("--clone-limit", type=int)
     parser.add_argument("--design-limit", type=int)
     args = parser.parse_args()
@@ -32,6 +33,8 @@ def main() -> None:
             user.clone_voice = True
         if args.design_voice:
             user.design_voice = True
+        if args.gen_voice:
+            user.gen_voice = True
         if args.clone_limit is not None:
             user.voice_clone.number_limit = args.clone_limit
         if args.design_limit is not None:
