@@ -99,18 +99,27 @@ kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_vo
 | POST | `/api/auth/changepassword` | JWT | Đổi mật khẩu |
 | POST | `/api/auth/acceptFuntion` | JWT | Kiểm tra quyền màn hình |
 | GET | `/api/auth/me` | JWT | Thông tin user hiện tại |
-| GET | `/api/voices/numberLimit` | JWT | Lấy giới hạn theo `username`, `screenid` |
-| POST | `/api/voices/upload` | JWT | Upload file local theo quyền màn hình |
+| POST | `/api/voices/clone` | JWT | Tạo Clone Voice và upload audio |
+| POST | `/api/voices/design` | JWT | Tạo Design Voice |
+| GET | `/api/voices` | JWT | Danh sách voice có phân trang |
+| GET | `/api/voices/limit` | JWT | Quota voice của tài khoản |
+| GET | `/api/voices/{voiceId}` | JWT | Chi tiết voice |
+| PATCH | `/api/voices/{voiceId}` | JWT | Đổi tên voice |
+| DELETE | `/api/voices/{voiceId}` | JWT | Xóa voice |
+| GET | `/api/voices/{voiceId}/audio` | JWT | Stream audio Clone Voice |
 
-`screenid` kiểm tra quyền hỗ trợ `clone_voice`, `design_voice` và `gen_voice`.
-API `numberLimit` hiện chỉ hỗ trợ `clone_voice` và `design_voice`.
+Mọi Voice API chỉ truy vấn dữ liệu có `user_id` của JWT hiện tại. User không
+thể xem, đổi tên, xóa hoặc tải audio của tài khoản khác.
 
-Ví dụ lấy limit:
+Ví dụ danh sách:
 
 ```http
-GET /api/voices/numberLimit?username=demo&screenid=clone_voice
+GET /api/voices?page=1&pageSize=10&type=voice-clone&search=giọng
 Authorization: Bearer <access_token>
 ```
+
+Clone Voice hỗ trợ `.wav`, `.mp3`, `.m4a`. Kích thước tối đa được cấu hình bởi
+`MAX_AUDIO_FILE_SIZE_MB`.
 
 ## PostgreSQL VPS
 

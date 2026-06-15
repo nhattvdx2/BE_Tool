@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     default_clone_voice_limit: int = 0
     default_design_voice_limit: int = 0
+    max_audio_file_size_mb: int = 20
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
