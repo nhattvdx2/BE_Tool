@@ -57,7 +57,9 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 Swagger: `http://127.0.0.1:8000/docs`
 
-Trang quản trị: `http://127.0.0.1:8000/admin`
+Trang quản trị khi chạy trực tiếp để phát triển: `http://127.0.0.1:8000/admin`.
+Trên VPS, Docker Compose tách giao diện quản trị sang cổng `8080`, trong khi API
+và Swagger tiếp tục dùng cổng `8000`.
 
 Triển khai production trên VPS bằng Docker và truy cập qua IP/port được hướng
 dẫn tại [`docs/04_TRIEN_KHAI_VPS.md`](docs/04_TRIEN_KHAI_VPS.md).

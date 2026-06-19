@@ -1,10 +1,11 @@
 # Triển khai trang quản trị trên VPS
 
-Trang quản trị là HTML/CSS/JavaScript được FastAPI phục vụ trực tiếp, vì vậy
-không cần build một frontend riêng. Sau khi backend chạy, truy cập:
+Trang quản trị là HTML/CSS/JavaScript nên không cần build một frontend riêng.
+Trong cấu hình VPS, Nginx phục vụ giao diện trên cổng riêng và proxy các request
+API tới FastAPI. Sau khi hai service chạy, truy cập:
 
 ```text
-http://13.140.181.69:8000/admin
+http://13.140.181.69:8080/admin
 ```
 
 ## 1. Chuẩn bị VPS
@@ -24,8 +25,9 @@ Tạo `.env` trên VPS và không commit file này:
 
 ```env
 APP_PORT=8000
+ADMIN_PORT=8080
 DATABASE_URL=postgresql+psycopg://nhattv:<DB_PASSWORD>@13.140.181.69:5432/app_tool_db?connect_timeout=5
-CORS_ORIGINS=http://13.140.181.69:8000,http://localhost:4200
+CORS_ORIGINS=http://13.140.181.69:8080,http://localhost:4200
 JWT_SECRET_KEY=<RANDOM_SECRET_AT_LEAST_32_CHARACTERS>
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
@@ -56,8 +58,10 @@ docker compose -f compose.vps.yaml ps
 docker compose -f compose.vps.yaml logs -f backend
 ```
 
-Container tự chạy `alembic upgrade head` trước khi khởi động FastAPI. Dữ liệu
-upload nằm tại `/opt/be-tool/uploads`, log audit tại `/opt/be-tool/logs/audit`.
+Container `backend` tự chạy `alembic upgrade head` trước khi khởi động FastAPI.
+Container `admin` phục vụ giao diện trên cổng `8080` và proxy `/api` nội bộ tới
+backend. Dữ liệu upload nằm tại `/opt/be-tool/uploads`, log audit tại
+`/opt/be-tool/logs/audit`.
 
 ## 4. Tạo tài khoản quản trị
 
@@ -74,6 +78,7 @@ Với UFW:
 
 ```bash
 sudo ufw allow 8000/tcp
+sudo ufw allow 8080/tcp
 sudo ufw status
 ```
 
@@ -91,7 +96,7 @@ Kết quả mong đợi:
 {"status":"ready","database":"ok","schema":"ok"}
 ```
 
-Sau đó mở `http://13.140.181.69:8000/admin` và đăng nhập bằng tài khoản có
+Sau đó mở `http://13.140.181.69:8080/admin` và đăng nhập bằng tài khoản có
 `is_active=true`, `is_default=true`.
 
 ## 6. Cập nhật phiên bản mới
