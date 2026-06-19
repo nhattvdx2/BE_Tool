@@ -1,4 +1,7 @@
 import logging
+from time import perf_counter
+from typing import Optional, Tuple
+from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -12,7 +15,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api.deps import DbSession
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.core.audit import write_audit_event
 from app.core.errors import ApiError
+from app.core.security import decode_access_token
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -30,6 +35,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+
+
+def _token_audit_identity(request: Request) -> Tuple[str, Optional[str]]:
+    authorization = request.headers.get("authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return "anonymous", None
+    try:
+        payload = decode_access_token(token)
+        return str(payload.get("username") or "anonymous"), str(payload.get("sub"))
+    except ValueError:
+        return "anonymous", None
+
+
+@app.middleware("http")
+async def audit_http_request(request: Request, call_next):
+    started = perf_counter()
+    request_id = str(uuid4())
+    username, user_id = _token_audit_identity(request)
+    request.state.audit_username = username
+    request.state.audit_user_id = user_id
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        duration_ms = round((perf_counter() - started) * 1000, 2)
+        write_audit_event(
+            getattr(request.state, "audit_username", "anonymous"),
+            {
+                "requestId": request_id,
+                "userId": getattr(request.state, "audit_user_id", None),
+                "method": request.method,
+                "path": request.url.path,
+                "statusCode": status_code,
+                "durationMs": duration_ms,
+                "clientIp": request.client.host if request.client else None,
+                "userAgent": request.headers.get("user-agent"),
+            },
+        )
 
 
 @app.exception_handler(ApiError)

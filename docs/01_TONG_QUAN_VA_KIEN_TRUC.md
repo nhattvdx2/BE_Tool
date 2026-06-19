@@ -26,6 +26,7 @@ Các chức năng hiện có:
 - Upload và stream audio Clone Voice.
 - Kiểm tra quota Voice Clone và Voice Design ở server.
 - Quản lý trạng thái, quyền và limit của user bằng CLI.
+- Ghi audit log riêng theo từng user cho mọi HTTP request.
 
 PostgreSQL lưu tài khoản, quyền và giới hạn. File upload được ghi vào thư mục
 local cấu hình bởi `UPLOAD_DIR`, không lưu trực tiếp trong database.
@@ -41,6 +42,7 @@ flowchart LR
     SVC --> ORM["User / Voice / Limit Models"]
     ORM --> PG["PostgreSQL"]
     API --> FILE["Local file storage"]
+    API --> AUDIT["Per-user audit logs"]
     ALEMBIC["Alembic"] -->|"Create / alter schema"| PG
 ```
 
@@ -56,6 +58,7 @@ app/
       auth.py             Auth endpoints
       voices.py           Voice endpoints
   core/
+    audit.py              Rotating JSON audit log theo user
     config.py             Đọc cấu hình .env
     security.py           bcrypt và JWT
   db/
@@ -157,6 +160,10 @@ Ví dụ request cần đăng nhập:
 | `DEFAULT_CLONE_VOICE_LIMIT` | Clone limit mặc định |
 | `DEFAULT_DESIGN_VOICE_LIMIT` | Design limit mặc định |
 | `MAX_AUDIO_FILE_SIZE_MB` | Dung lượng audio tối đa |
+| `AUDIT_LOG_ENABLED` | Bật/tắt audit log |
+| `AUDIT_LOG_DIR` | Thư mục chứa log theo user |
+| `AUDIT_LOG_MAX_BYTES` | Kích thước tối đa mỗi file trước rotation |
+| `AUDIT_LOG_BACKUP_COUNT` | Số file backup giữ lại |
 
 #### `cors_origin_list`
 
@@ -254,3 +261,25 @@ Các nhóm hàm:
 
 Metadata được lưu trong PostgreSQL. Audio hiện lưu local qua `storage_key`;
 service có thể được thay bằng adapter S3/MinIO mà không cần đổi schema API.
+
+### 4.8 `app/core/audit.py` và audit middleware
+
+`audit_http_request()` trong `app/main.py` bao quanh mọi request:
+
+1. Sinh UUID `requestId`.
+2. Xác định username từ JWT hợp lệ nếu có.
+3. Route/dependency cập nhật identity sau khi xác thực user từ DB.
+4. Đo thời gian xử lý.
+5. Gắn `X-Request-ID` vào response.
+6. Gọi `write_audit_event()` trong khối `finally`, nên response lỗi cũng được log.
+
+`AuditLogger`:
+
+- Sanitize username và thêm SHA-256 suffix vào tên file.
+- Ghi một JSON object trên mỗi dòng.
+- Dùng `RotatingFileHandler` để giới hạn dung lượng.
+- Giới hạn số file handler mở đồng thời.
+- Lỗi ghi audit được log nội bộ nhưng không làm API thất bại.
+
+Hệ thống không ghi request body, password, JWT, Authorization header hoặc file
+audio vào audit log.

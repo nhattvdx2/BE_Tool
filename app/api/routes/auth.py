@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.security import create_access_token
@@ -25,12 +25,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_200_OK)
-def register(payload: RegisterRequest, db: DbSession) -> UserResponse:
-    return register_user(db, payload)
+def register(payload: RegisterRequest, db: DbSession, request: Request) -> UserResponse:
+    user = register_user(db, payload)
+    request.state.audit_username = user.username
+    request.state.audit_user_id = str(user.public_id)
+    return user
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
+def login(payload: LoginRequest, db: DbSession, request: Request) -> TokenResponse:
     user = authenticate_user(db, payload.username, payload.password)
     if not user:
         raise HTTPException(
@@ -42,6 +45,8 @@ def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is not active",
         )
+    request.state.audit_username = user.username
+    request.state.audit_user_id = str(user.public_id)
     return TokenResponse(
         access_token=create_access_token(user.id, user.username),
         user=LoginUserResponse.model_validate(user),

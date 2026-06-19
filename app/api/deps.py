@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
+    request: Request,
     db: DbSession,
     credentials: Annotated[
         Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)
@@ -39,6 +40,8 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive or missing user",
         )
+    request.state.audit_username = user.username
+    request.state.audit_user_id = str(user.public_id)
     return user
 
 
@@ -46,6 +49,7 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 def get_voice_current_user(
+    request: Request,
     db: DbSession,
     credentials: Annotated[
         Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)
@@ -62,6 +66,8 @@ def get_voice_current_user(
     user = db.get(User, user_id)
     if not user or not user.is_active:
         raise ApiError(401, "UNAUTHORIZED", "Tài khoản không tồn tại hoặc chưa active.")
+    request.state.audit_username = user.username
+    request.state.audit_user_id = str(user.public_id)
     return user
 
 

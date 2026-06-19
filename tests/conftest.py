@@ -2,6 +2,7 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 os.environ["JWT_SECRET_KEY"] = "test-secret"
+os.environ["AUDIT_LOG_ENABLED"] = "false"
 
 import pytest
 from fastapi.testclient import TestClient

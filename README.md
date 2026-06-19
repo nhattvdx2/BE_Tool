@@ -121,6 +121,29 @@ Authorization: Bearer <access_token>
 Clone Voice hỗ trợ `.wav`, `.mp3`, `.m4a`. Kích thước tối đa được cấu hình bởi
 `MAX_AUDIO_FILE_SIZE_MB`.
 
+## Audit log theo user
+
+Mọi HTTP request được ghi JSON Lines vào file riêng theo user trong
+`AUDIT_LOG_DIR`. Request chưa xác thực được ghi vào file anonymous.
+
+```env
+AUDIT_LOG_ENABLED=true
+AUDIT_LOG_DIR=logs/audit
+AUDIT_LOG_MAX_BYTES=10485760
+AUDIT_LOG_BACKUP_COUNT=5
+```
+
+Xem log realtime:
+
+```bash
+ls -lah logs/audit
+tail -f logs/audit/*.log
+```
+
+Log chỉ chứa metadata request như thời gian, request ID, method, path, status,
+IP và thời gian xử lý. Body, password, JWT và Authorization header không được
+ghi. Response có header `X-Request-ID` để đối chiếu với log.
+
 ## PostgreSQL VPS
 
 PostgreSQL phải listen trên IP mạng, cho phép IP máy chạy backend trong

@@ -20,6 +20,10 @@ Alembic tự tạo thêm bảng `alembic_version` để theo dõi migration.
 
 Không có bảng `voice_gens`. `gen_voice` là cột quyền trong `users`.
 
+Audit log không lưu trong PostgreSQL. Mỗi request được ghi thành JSON Lines
+trong `AUDIT_LOG_DIR`, phân file theo user. Vì vậy audit logging không yêu cầu
+thêm migration hay bảng database.
+
 ## 2. Bảng `users`
 
 Model: `User` trong `app/models/user.py`.

@@ -374,3 +374,43 @@ Kiểm tra cả kết nối database và sự tồn tại của bảng `users`.
 - Metadata nằm trong DB; không lưu binary audio trong PostgreSQL.
 - API đã kiểm tra quota bằng số bản ghi hiện tại, không giảm một counter riêng.
 - Endpoint gọi engine OmniVoice thực tế chưa được triển khai.
+
+### Audit log mỗi lần gọi API
+
+Mọi request, gồm cả request lỗi, tạo một JSON event:
+
+```json
+{
+  "timestamp": "2026-06-19T10:00:00+00:00",
+  "requestId": "uuid",
+  "userId": "public-user-uuid",
+  "method": "POST",
+  "path": "/api/voices/clone",
+  "statusCode": 200,
+  "durationMs": 35.42,
+  "clientIp": "127.0.0.1",
+  "userAgent": "Angular/Electron"
+}
+```
+
+Phân file:
+
+- JWT hợp lệ hoặc login/register thành công: file của username.
+- Chưa đăng nhập, token sai, login thất bại: file anonymous.
+- Tên file được sanitize và thêm hash để hai username không ghi nhầm file.
+
+Tra cứu theo request ID:
+
+```bash
+grep -R 'request-id-can-tim' logs/audit/
+```
+
+Rotation mặc định:
+
+- Mỗi file tối đa 10 MB.
+- Giữ 5 file backup.
+- Có thể thay đổi qua `.env`.
+
+Audit file phù hợp cho kiểm tra vận hành trên một instance. Khi chạy nhiều
+worker/VPS, nên chuyển log stdout sang hệ thống tập trung như Loki/ELK hoặc dùng
+audit sink chuyên dụng để tránh phân tán log.
