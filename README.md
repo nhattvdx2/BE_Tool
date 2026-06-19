@@ -59,6 +59,9 @@ Swagger: `http://127.0.0.1:8000/docs`
 
 Trang quản trị: `http://127.0.0.1:8000/admin`
 
+Triển khai production trên VPS bằng Docker và truy cập qua IP/port được hướng
+dẫn tại [`docs/04_TRIEN_KHAI_VPS.md`](docs/04_TRIEN_KHAI_VPS.md).
+
 Kiểm tra tiến trình API và database/schema:
 
 ```bash
