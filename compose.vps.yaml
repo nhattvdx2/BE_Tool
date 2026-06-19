@@ -6,6 +6,8 @@ services:
     container_name: be-tool-backend
     env_file:
       - .env
+    environment:
+      SERVE_ADMIN_UI: "false"
     ports:
       - "${APP_PORT:-8000}:8000"
     volumes:

@@ -26,6 +26,7 @@ Tạo `.env` trên VPS và không commit file này:
 ```env
 APP_PORT=8000
 ADMIN_PORT=8080
+SERVE_ADMIN_UI=false
 DATABASE_URL=postgresql+psycopg://nhattv:<DB_PASSWORD>@13.140.181.69:5432/app_tool_db?connect_timeout=5
 CORS_ORIGINS=http://13.140.181.69:8080,http://localhost:4200
 JWT_SECRET_KEY=<RANDOM_SECRET_AT_LEAST_32_CHARACTERS>
@@ -62,6 +63,10 @@ Container `backend` tự chạy `alembic upgrade head` trước khi khởi độ
 Container `admin` phục vụ giao diện trên cổng `8080` và proxy `/api` nội bộ tới
 backend. Dữ liệu upload nằm tại `/opt/be-tool/uploads`, log audit tại
 `/opt/be-tool/logs/audit`.
+
+`compose.vps.yaml` ép `SERVE_ADMIN_UI=false` cho backend. Vì vậy `/admin` và
+`/static/admin` không được phục vụ trực tiếp trên cổng API `8000`; giao diện chỉ
+được truy cập qua cổng quản trị `8080`.
 
 ## 4. Tạo tài khoản quản trị
 

@@ -38,12 +38,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
-app.include_router(admin_pages_router)
-app.mount(
-    "/static",
-    StaticFiles(directory=Path(__file__).parent / "static"),
-    name="static",
-)
+if settings.serve_admin_ui:
+    app.include_router(admin_pages_router)
+    app.mount(
+        "/static",
+        StaticFiles(directory=Path(__file__).parent / "static"),
+        name="static",
+    )
 
 
 def _token_audit_identity(request: Request) -> Tuple[str, Optional[str]]:

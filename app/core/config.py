@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8000
+    serve_admin_ui: bool = True
     database_url: str = "postgresql://postgres:postgres@localhost:5432/be_tool"
     cors_origins: str = "http://localhost:4200"
     jwt_secret_key: str = "change-me-in-production"
