@@ -90,16 +90,14 @@ python -m scripts.create_user demo \
   --design-limit 5
 ```
 
-Để cấp quyền truy cập trang quản trị cho tài khoản đầu tiên:
+Tài khoản quản trị được lưu riêng trong bảng `user_admins`. Tạo admin đầu tiên:
 
 ```bash
-python -m scripts.create_user admin --activate --admin
+python -m scripts.create_admin admin --email admin@example.com
 ```
 
-Trang quản trị dùng cờ `users.is_default` làm quyền admin. Admin có thể xem
-dashboard, tạo và cập nhật tài khoản, bật/tắt quyền, đặt quota, đặt lại mật
-khẩu, quản lý toàn bộ voice và xem audit log. Hệ thống ngăn admin tự khóa hoặc
-tự gỡ quyền quản trị của chính mình.
+CLI yêu cầu nhập mật khẩu. Admin đăng nhập qua `/api/admin/auth/login` và nhận
+JWT loại `admin`; token của user thường không truy cập được API quản trị.
 
 4. Gọi `POST /api/auth/login` để nhận JWT.
 5. Gửi JWT ở header `Authorization: Bearer <access_token>`.
@@ -117,6 +115,7 @@ kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_vo
 | POST | `/api/auth/changepassword` | JWT | Đổi mật khẩu |
 | POST | `/api/auth/acceptFuntion` | JWT | Kiểm tra quyền màn hình |
 | GET | `/api/auth/me` | JWT | Thông tin user hiện tại |
+| POST | `/api/admin/auth/login` | Không | Đăng nhập admin riêng |
 | GET | `/api/admin/dashboard` | Admin | Thống kê hệ thống |
 | GET/POST | `/api/admin/users` | Admin | Danh sách/tạo tài khoản |
 | PATCH | `/api/admin/users/{userId}` | Admin | Quyền, trạng thái và quota |

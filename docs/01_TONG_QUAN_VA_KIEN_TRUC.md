@@ -27,6 +27,7 @@ Các chức năng hiện có:
 - Kiểm tra quota Voice Clone và Voice Design ở server.
 - Quản lý trạng thái, quyền và limit của user bằng CLI.
 - Ghi audit log riêng theo từng user cho mọi HTTP request.
+- Xác thực quản trị độc lập với tài khoản người dùng.
 
 PostgreSQL lưu tài khoản, quyền và giới hạn. File upload được ghi vào thư mục
 local cấu hình bởi `UPLOAD_DIR`, không lưu trực tiếp trong database.
@@ -56,6 +57,7 @@ app/
     router.py             Ghép router dưới prefix /api
     routes/
       auth.py             Auth endpoints
+      admin.py            Admin login và API quản trị
       voices.py           Voice endpoints
   core/
     audit.py              Rotating JSON audit log theo user
@@ -67,6 +69,7 @@ app/
   models/
     base.py               Declarative Base và timestamps
     user.py               Model users
+    user_admin.py         Model tài khoản quản trị độc lập
     voice.py              Model voices và các bảng limit
   schemas/
     auth.py               Auth request/response
@@ -74,6 +77,7 @@ app/
     voice.py              Voice response
   services/
     auth_service.py       Logic tài khoản và quyền
+    admin_service.py      Logic dashboard và quản trị dữ liệu
     voice_service.py      CRUD, ownership, validation và quota
   utils/
     files.py              Lưu/xóa/resolve file audio local
@@ -82,6 +86,7 @@ alembic/
   versions/               Các migration
 scripts/
   create_user.py          CLI quản trị user
+  create_admin.py         CLI tạo/cập nhật admin độc lập
 tests/                    Test API và business logic
 ```
 

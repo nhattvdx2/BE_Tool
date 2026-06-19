@@ -8,6 +8,7 @@ from app.core.security import decode_access_token
 from app.core.errors import ApiError
 from app.db.session import get_db
 from app.models.user import User
+from app.models.user_admin import UserAdmin
 
 DbSession = Annotated[Session, Depends(get_db)]
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -27,6 +28,8 @@ def get_current_user(
         )
     try:
         payload = decode_access_token(credentials.credentials)
+        if payload.get("account_type", "user") != "user":
+            raise ValueError("Invalid account type")
         user_id = int(payload["sub"])
     except (KeyError, TypeError, ValueError):
         raise HTTPException(
@@ -48,16 +51,40 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def get_current_admin(current_user: CurrentUser) -> User:
-    if not current_user.is_default:
+def get_current_admin(
+    request: Request,
+    db: DbSession,
+    credentials: Annotated[
+        Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)
+    ],
+) -> UserAdmin:
+    if credentials is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrator access required",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin authentication required",
         )
-    return current_user
+    try:
+        payload = decode_access_token(credentials.credentials)
+        if payload.get("account_type") != "admin":
+            raise ValueError("Invalid account type")
+        admin_id = int(payload["sub"])
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin access token",
+        )
+    admin = db.get(UserAdmin, admin_id)
+    if not admin or not admin.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive or missing admin",
+        )
+    request.state.audit_username = f"admin:{admin.username}"
+    request.state.audit_user_id = f"admin:{admin.id}"
+    return admin
 
 
-CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+CurrentAdmin = Annotated[UserAdmin, Depends(get_current_admin)]
 
 
 def get_voice_current_user(
@@ -71,6 +98,8 @@ def get_voice_current_user(
         raise ApiError(401, "UNAUTHORIZED", "Yêu cầu đăng nhập.")
     try:
         payload = decode_access_token(credentials.credentials)
+        if payload.get("account_type", "user") != "user":
+            raise ValueError("Invalid account type")
         user_id = int(payload["sub"])
     except (KeyError, TypeError, ValueError):
         raise ApiError(401, "UNAUTHORIZED", "Access token không hợp lệ.")

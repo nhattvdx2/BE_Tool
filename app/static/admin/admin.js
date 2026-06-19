@@ -54,7 +54,7 @@ async function login(event) {
   const error = $("#loginError");
   error.textContent = "";
   try {
-    const response = await fetch("/api/auth/login", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username:form.get("username"), password:form.get("password")})});
+    const response = await fetch("/api/admin/auth/login", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username:form.get("username"), password:form.get("password")})});
     const body = await response.json();
     if (!response.ok) throw new Error(body.detail || "Đăng nhập không thành công.");
     state.token = body.access_token;
@@ -125,7 +125,7 @@ async function loadUsers(page = state.userPage) {
   const data = await api(`/api/admin/users?${queryFromForm("#userFilter", page)}`);
   state.users = new Map(data.items.map(user => [String(user.id), user]));
   $("#usersBody").innerHTML = data.items.length ? data.items.map(user => `<tr>
-    <td><strong>${escapeHtml(user.username)} ${user.is_default ? '<span class="badge admin">Admin</span>' : ""}</strong><div class="subtext">${escapeHtml(user.email)}</div></td>
+    <td><strong>${escapeHtml(user.username)}</strong><div class="subtext">${escapeHtml(user.email)}</div></td>
     <td><span class="badge ${user.is_active ? "good" : "warn"}">${user.is_active ? "Hoạt động" : "Đã khóa / chờ"}</span></td>
     <td><span class="subtext">${[user.clone_voice&&"Clone",user.design_voice&&"Design",user.gen_voice&&"Generate"].filter(Boolean).join(" · ") || "Không có"}</span></td>
     <td><strong>${user.clone_limit} / ${user.design_limit}</strong></td><td>${user.voice_count}</td>
@@ -143,7 +143,7 @@ function openUserDialog(user = null) {
   form.elements.password.required = !user;
   $("#passwordField").hidden = Boolean(user);
   if (user) ["username","email","clone_limit","design_limit"].forEach(key => { form.elements[key].value = user[key]; });
-  ["is_active","is_default","clone_voice","design_voice","gen_voice"].forEach(key => { form.elements[key].checked = user ? user[key] : ["is_active","design_voice","gen_voice"].includes(key); });
+  ["is_active","clone_voice","design_voice","gen_voice"].forEach(key => { form.elements[key].checked = user ? user[key] : ["is_active","design_voice","gen_voice"].includes(key); });
   $("#userDialog").showModal();
 }
 
@@ -151,7 +151,7 @@ async function saveUser(event) {
   event.preventDefault(); const form = event.currentTarget; const id = form.elements.id.value;
   const payload = {};
   ["email","clone_limit","design_limit"].forEach(key => payload[key] = key.endsWith("limit") ? Number(form.elements[key].value) : form.elements[key].value);
-  ["is_active","is_default","clone_voice","design_voice","gen_voice"].forEach(key => payload[key] = form.elements[key].checked);
+  ["is_active","clone_voice","design_voice","gen_voice"].forEach(key => payload[key] = form.elements[key].checked);
   if (!id) { payload.username = form.elements.username.value; payload.password = form.elements.password.value; }
   try {
     await api(id ? `/api/admin/users/${id}` : "/api/admin/users", {method:id ? "PATCH" : "POST", body:JSON.stringify(payload)});

@@ -4,8 +4,9 @@ from uuid import UUID
 
 import pytest
 
-from app.core.security import verify_password
+from app.core.security import decode_access_token, hash_password, verify_password
 from app.models.user import User
+from app.models.user_admin import UserAdmin
 from app.models.voice import Voice
 from tests.test_auth import activate, login, register
 from tests.test_voices import create_clone, create_design, prepare_user
@@ -20,9 +21,19 @@ def voice_storage(tmp_path, monkeypatch):
 
 
 def admin_headers(client, db):
-    register(client, username="admin", email="admin@example.com")
-    admin = activate(db, username="admin", is_default=True)
-    token = login(client, username="admin").json()["access_token"]
+    admin = UserAdmin(
+        username="admin",
+        email="admin@example.com",
+        password_hash=hash_password("password123"),
+        is_active=True,
+    )
+    db.add(admin)
+    db.commit()
+    response = client.post(
+        "/api/admin/auth/login",
+        json={"username": "admin", "password": "password123"},
+    )
+    token = response.json()["access_token"]
     return admin, {"Authorization": f"Bearer {token}"}
 
 
@@ -48,8 +59,18 @@ def test_admin_api_requires_admin_permission(client, db):
         "/api/admin/dashboard", headers={"Authorization": f"Bearer {token}"}
     )
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Administrator access required"
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid admin access token"
+
+
+def test_admin_login_is_separate_from_user_login(client, db):
+    admin, headers = admin_headers(client, db)
+    token = headers["Authorization"].removeprefix("Bearer ")
+
+    assert client.get("/api/admin/dashboard", headers=headers).status_code == 200
+    assert login(client, username=admin.username).status_code == 401
+    assert client.get("/api/auth/me", headers=headers).status_code == 401
+    assert decode_access_token(token)["account_type"] == "admin"
 
 
 def test_dashboard_and_user_management(client, db):
@@ -81,7 +102,7 @@ def test_dashboard_and_user_management(client, db):
     )
 
     assert dashboard.status_code == 200
-    assert dashboard.json()["total_users"] == 2
+    assert dashboard.json()["total_users"] == 1
     assert dashboard.json()["admin_users"] == 1
     assert created.status_code == 201
     assert created.json()["clone_limit"] == 4
@@ -90,27 +111,22 @@ def test_dashboard_and_user_management(client, db):
     assert updated.json()["gen_voice"] is False
     assert listed.json()["total_items"] == 1
     assert listed.json()["items"][0]["username"] == "operator"
-    assert admin.is_default is True
+    assert admin.is_active is True
 
 
-def test_admin_cannot_remove_own_access_and_can_reset_password(client, db):
-    admin, headers = admin_headers(client, db)
-    denied = client.patch(
-        f"/api/admin/users/{admin.id}",
-        headers=headers,
-        json={"is_default": False},
-    )
+def test_admin_can_reset_normal_user_password(client, db):
+    _, headers = admin_headers(client, db)
+    register(client)
+    user = activate(db)
     reset = client.post(
-        f"/api/admin/users/{admin.id}/reset-password",
+        f"/api/admin/users/{user.id}/reset-password",
         headers=headers,
         json={"new_password": "newpassword123"},
     )
 
-    db.refresh(admin)
-    assert denied.status_code == 400
-    assert admin.is_default is True
+    db.refresh(user)
     assert reset.status_code == 200
-    assert verify_password("newpassword123", admin.password_hash)
+    assert verify_password("newpassword123", user.password_hash)
 
 
 def test_admin_manages_all_voices_and_removes_audio_file(

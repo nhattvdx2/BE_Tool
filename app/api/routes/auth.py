@@ -66,7 +66,7 @@ def accept_function(
     payload: AcceptFunctionRequest, current_user: CurrentUser, db: DbSession
 ) -> FunctionAccessResponse:
     user = get_user_by_username(db, payload.username)
-    if not user or (user.id != current_user.id and not current_user.is_default):
+    if not user or user.id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return FunctionAccessResponse(
         username=user.username,

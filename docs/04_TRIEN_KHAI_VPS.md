@@ -72,7 +72,7 @@ backend. Dữ liệu upload nằm tại `/opt/be-tool/uploads`, log audit tại
 
 ```bash
 docker compose -f compose.vps.yaml exec backend \
-  python -m scripts.create_user admin --activate --admin
+  python -m scripts.create_admin admin --email admin@example.com
 ```
 
 Lệnh sẽ yêu cầu nhập mật khẩu nếu không truyền `--password`.
@@ -101,8 +101,8 @@ Kết quả mong đợi:
 {"status":"ready","database":"ok","schema":"ok"}
 ```
 
-Sau đó mở `http://13.140.181.69:8080/admin` và đăng nhập bằng tài khoản có
-`is_active=true`, `is_default=true`.
+Sau đó mở `http://13.140.181.69:8080/admin` và đăng nhập bằng tài khoản trong
+bảng `user_admins` có `is_active=true`.
 
 ## 6. Cập nhật phiên bản mới
 

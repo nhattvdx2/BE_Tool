@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.errors import ApiError
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.models.user import User
+from app.models.user_admin import UserAdmin
 from app.models.voice import Voice, VoiceClone, VoiceDesign
 from app.schemas.admin import (
     AdminAuditEventResponse,
@@ -36,9 +37,7 @@ def get_dashboard(db: Session) -> AdminDashboardResponse:
     active_users = (
         db.scalar(select(func.count(User.id)).where(User.is_active.is_(True))) or 0
     )
-    admin_users = (
-        db.scalar(select(func.count(User.id)).where(User.is_default.is_(True))) or 0
-    )
+    admin_users = db.scalar(select(func.count(UserAdmin.id))) or 0
     total_voices = db.scalar(select(func.count(Voice.id))) or 0
     clone_voices = (
         db.scalar(
@@ -69,7 +68,6 @@ def _to_admin_user(user: User, voice_count: int = 0) -> AdminUserResponse:
         design_voice=user.design_voice,
         gen_voice=user.gen_voice,
         is_active=user.is_active,
-        is_default=user.is_default,
         clone_limit=user.voice_clone.number_limit if user.voice_clone else 0,
         design_limit=user.voice_design.number_limit if user.voice_design else 0,
         voice_count=voice_count,
@@ -127,7 +125,6 @@ def create_user(db: Session, payload: AdminCreateUserRequest) -> AdminUserRespon
         email=email,
         password_hash=hash_password(payload.password),
         is_active=payload.is_active,
-        is_default=payload.is_default,
         clone_voice=payload.clone_voice,
         design_voice=payload.design_voice,
         gen_voice=payload.gen_voice,
@@ -159,19 +156,11 @@ def get_user(db: Session, user_id: int) -> User:
 
 def update_user(
     db: Session,
-    admin: User,
     user_id: int,
     payload: AdminUpdateUserRequest,
 ) -> AdminUserResponse:
     user = get_user(db, user_id)
     changes = payload.model_dump(exclude_unset=True)
-    if user.id == admin.id and (
-        changes.get("is_active") is False or changes.get("is_default") is False
-    ):
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "You cannot deactivate or remove your own administrator access",
-        )
     if "email" in changes:
         email = str(changes.pop("email")).strip().lower()
         duplicate = db.scalar(
@@ -202,6 +191,16 @@ def reset_user_password(db: Session, user_id: int, new_password: str) -> None:
     user = get_user(db, user_id)
     user.password_hash = hash_password(new_password)
     db.commit()
+
+
+def authenticate_admin(
+    db: Session, username: str, password: str
+) -> Optional[UserAdmin]:
+    normalized = normalize_username(username)
+    admin = db.scalar(select(UserAdmin).where(UserAdmin.username == normalized))
+    if not admin or not verify_password(password, admin.password_hash):
+        return None
+    return admin
 
 
 def _to_admin_voice(voice: Voice) -> AdminVoiceResponse:

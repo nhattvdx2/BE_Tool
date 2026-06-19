@@ -12,6 +12,7 @@ Tài liệu liên quan:
 Database hiện có các bảng nghiệp vụ:
 
 - `users`
+- `user_admins`
 - `voice_clones`
 - `voice_designs`
 - `voices`
@@ -39,13 +40,29 @@ Model: `User` trong `app/models/user.py`.
 | `design_voice` | Boolean | Default true | Quyền Voice Design |
 | `gen_voice` | Boolean | Default true | Quyền Generate Voice |
 | `is_active` | Boolean | Default false | Cho phép đăng nhập |
-| `is_default` | Boolean | Default false | Có thể kiểm tra user khác |
 | `created_at` | Timestamp timezone | Default now | Thời gian tạo |
 | `updated_at` | Timestamp timezone | Default now | Thời gian cập nhật |
 
 `username` và `email` có unique index để ngăn dữ liệu trùng.
 
-## 3. Bảng `voice_clones`
+## 3. Bảng `user_admins`
+
+Model: `UserAdmin` trong `app/models/user_admin.py`.
+
+| Cột | Kiểu | Ràng buộc / mặc định | Ý nghĩa |
+| --- | --- | --- | --- |
+| `id` | Integer | Primary key | ID admin |
+| `username` | Varchar(100) | Unique, index, not null | Tên đăng nhập admin |
+| `password_hash` | Varchar(255) | Not null | Bcrypt hash riêng |
+| `email` | Varchar(255) | Unique, index, not null | Email admin |
+| `is_active` | Boolean | Default true | Cho phép đăng nhập quản trị |
+| `created_at` | Timestamp timezone | Default now | Thời gian tạo |
+| `updated_at` | Timestamp timezone | Default now | Thời gian cập nhật |
+
+`user_admins` không có foreign key tới `users`. Hai loại tài khoản xác thực qua
+endpoint và JWT `account_type` khác nhau.
+
+## 4. Bảng `voice_clones`
 
 Model: `VoiceClone` trong `app/models/voice.py`.
 
@@ -59,7 +76,7 @@ Model: `VoiceClone` trong `app/models/voice.py`.
 
 `user_id` là unique nên mỗi user chỉ có một bản ghi Voice Clone limit.
 
-## 4. Bảng `voice_designs`
+## 5. Bảng `voice_designs`
 
 Model: `VoiceDesign` trong `app/models/voice.py`.
 
@@ -73,7 +90,7 @@ Model: `VoiceDesign` trong `app/models/voice.py`.
 
 `user_id` là unique nên mỗi user chỉ có một bản ghi Voice Design limit.
 
-## 5. Bảng `voices`
+## 6. Bảng `voices`
 
 Model: `Voice` trong `app/models/voice.py`.
 
@@ -106,7 +123,7 @@ Ràng buộc:
 - Check `generation_method IN ('voice-clone', 'voice-design')`.
 - Một user có nhiều voice.
 
-## 6. Bảng `alembic_version`
+## 7. Bảng `alembic_version`
 
 Bảng do Alembic quản lý:
 
@@ -114,13 +131,23 @@ Bảng do Alembic quản lý:
 - Không chỉnh sửa thủ công.
 - Revision mới nhất hiện tại: `20260615_03`.
 
-## 7. Sơ đồ liên kết
+## 8. Sơ đồ liên kết
 
 ```mermaid
 erDiagram
     USERS ||--|| VOICE_CLONES : "has one"
     USERS ||--|| VOICE_DESIGNS : "has one"
     USERS ||--o{ VOICES : "owns"
+
+    USER_ADMINS {
+        int id PK
+        varchar username UK
+        varchar password_hash
+        varchar email UK
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
 
     USERS {
         int id PK
@@ -132,7 +159,6 @@ erDiagram
         boolean design_voice
         boolean gen_voice
         boolean is_active
-        boolean is_default
         timestamptz created_at
         timestamptz updated_at
     }
@@ -166,7 +192,7 @@ erDiagram
     }
 ```
 
-## 8. Chi tiết quan hệ
+## 9. Chi tiết quan hệ
 
 ### `users` và `voice_clones`
 
@@ -200,7 +226,7 @@ Khi xóa user qua ORM, các bản ghi limit liên quan cũng được xóa.
 - File object cần được cleanup bởi service/storage lifecycle.
 - Ownership API luôn lọc theo cả `voices.id` và `voices.user_id`.
 
-## 9. Dữ liệu được tạo khi đăng ký
+## 10. Dữ liệu được tạo khi đăng ký
 
 `register_user()` tạo trong cùng luồng:
 
@@ -218,13 +244,12 @@ users.clone_voice = false
 users.design_voice = true
 users.gen_voice = true
 users.is_active = false
-users.is_default = false
 
 voice_clones.number_limit = DEFAULT_CLONE_VOICE_LIMIT
 voice_designs.number_limit = DEFAULT_DESIGN_VOICE_LIMIT
 ```
 
-## 10. Migration
+## 11. Migration
 
 ### `20260613_01_initial_schema`
 
@@ -255,7 +280,15 @@ voice_designs.number_limit = DEFAULT_DESIGN_VOICE_LIMIT
 - Tạo bảng `voices`.
 - Tạo ownership index, generation method index và unique name constraint.
 
-## 11. Cập nhật schema khi deploy
+### `20260619_04_separate_admin_users`
+
+- Tạo bảng `user_admins` cùng unique index cho username và email.
+- Sao chép các tài khoản cũ có `users.is_default=true` sang `user_admins`, giữ
+  nguyên password hash và trạng thái active.
+- Xóa cột `users.is_default` sau khi sao chép dữ liệu.
+- Từ revision này, tài khoản user và admin xác thực độc lập.
+
+## 12. Cập nhật schema khi deploy
 
 Sau khi pull source mới:
 
@@ -268,7 +301,7 @@ alembic current
 Revision cần đạt:
 
 ```text
-20260615_03 (head)
+20260619_04 (head)
 ```
 
 Nếu không chạy migration, ORM có thể truy vấn cột chưa tồn tại và API trả

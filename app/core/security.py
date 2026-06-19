@@ -18,12 +18,15 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int, username: str) -> str:
+def create_access_token(
+    user_id: int, username: str, account_type: str = "user"
+) -> str:
     settings = get_settings()
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "username": username,
+        "account_type": account_type,
         "iat": now,
         "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
     }

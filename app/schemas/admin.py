@@ -17,6 +17,25 @@ class AdminDashboardResponse(BaseModel):
     design_voices: int
 
 
+class AdminLoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class AdminLoginUserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    email: str
+
+
+class AdminTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: AdminLoginUserResponse
+
+
 class AdminUserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,7 +47,6 @@ class AdminUserResponse(BaseModel):
     design_voice: bool
     gen_voice: bool
     is_active: bool
-    is_default: bool
     clone_limit: int
     design_limit: int
     voice_count: int
@@ -49,7 +67,6 @@ class AdminCreateUserRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     is_active: bool = True
-    is_default: bool = False
     clone_voice: bool = False
     design_voice: bool = True
     gen_voice: bool = True
@@ -60,7 +77,6 @@ class AdminCreateUserRequest(BaseModel):
 class AdminUpdateUserRequest(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
-    is_default: Optional[bool] = None
     clone_voice: Optional[bool] = None
     design_voice: Optional[bool] = None
     gen_voice: Optional[bool] = None

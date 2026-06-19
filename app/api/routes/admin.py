@@ -1,20 +1,24 @@
 from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse, Response
 
 from app.api.deps import CurrentAdmin, DbSession
 from app.core.config import get_settings
 from app.core.errors import ApiError
+from app.core.security import create_access_token
 from app.schemas.admin import (
     AdminAuditListResponse,
     AdminCreateUserRequest,
     AdminDashboardResponse,
+    AdminLoginRequest,
+    AdminLoginUserResponse,
     AdminResetPasswordRequest,
     AdminUpdateUserRequest,
     AdminUserListResponse,
     AdminUserResponse,
+    AdminTokenResponse,
     AdminVoiceListResponse,
     AdminVoiceResponse,
 )
@@ -24,6 +28,29 @@ from app.services import admin_service
 from app.utils.files import resolve_storage_path
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.post("/auth/login", response_model=AdminTokenResponse)
+def admin_login(
+    payload: AdminLoginRequest, db: DbSession, request: Request
+) -> AdminTokenResponse:
+    admin = admin_service.authenticate_admin(db, payload.username, payload.password)
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin username or password",
+        )
+    if not admin.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin account is not active",
+        )
+    request.state.audit_username = f"admin:{admin.username}"
+    request.state.audit_user_id = f"admin:{admin.id}"
+    return AdminTokenResponse(
+        access_token=create_access_token(admin.id, admin.username, "admin"),
+        user=AdminLoginUserResponse.model_validate(admin),
+    )
 
 
 @router.get("/dashboard", response_model=AdminDashboardResponse)
@@ -57,9 +84,9 @@ def update_user(
     user_id: int,
     payload: AdminUpdateUserRequest,
     db: DbSession,
-    current_admin: CurrentAdmin,
+    _: CurrentAdmin,
 ) -> AdminUserResponse:
-    return admin_service.update_user(db, current_admin, user_id, payload)
+    return admin_service.update_user(db, user_id, payload)
 
 
 @router.post("/users/{user_id}/reset-password", response_model=MessageResponse)

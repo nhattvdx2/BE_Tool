@@ -13,7 +13,6 @@ def main() -> None:
     parser.add_argument("username")
     parser.add_argument("--password")
     parser.add_argument("--activate", action="store_true")
-    parser.add_argument("--admin", action="store_true")
     parser.add_argument("--clone-voice", action="store_true")
     parser.add_argument("--design-voice", action="store_true")
     parser.add_argument("--gen-voice", action="store_true")
@@ -30,8 +29,6 @@ def main() -> None:
             user.password_hash = hash_password(password)
         if args.activate:
             user.is_active = True
-        if args.admin:
-            user.is_default = True
         if args.clone_voice:
             user.clone_voice = True
         if args.design_voice:

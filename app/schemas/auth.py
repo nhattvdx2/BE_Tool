@@ -34,7 +34,6 @@ class UserResponse(BaseModel):
     design_voice: bool
     gen_voice: bool
     is_active: bool
-    is_default: bool
     created_at: datetime
     updated_at: datetime
 

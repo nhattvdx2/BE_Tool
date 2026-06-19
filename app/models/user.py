@@ -22,7 +22,6 @@ class User(TimestampMixin, Base):
     design_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     gen_voice: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     voice_clone: Mapped["VoiceClone"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False

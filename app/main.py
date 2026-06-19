@@ -54,7 +54,11 @@ def _token_audit_identity(request: Request) -> Tuple[str, Optional[str]]:
         return "anonymous", None
     try:
         payload = decode_access_token(token)
-        return str(payload.get("username") or "anonymous"), str(payload.get("sub"))
+        username = str(payload.get("username") or "anonymous")
+        user_id = str(payload.get("sub"))
+        if payload.get("account_type") == "admin":
+            return f"admin:{username}", f"admin:{user_id}"
+        return username, user_id
     except ValueError:
         return "anonymous", None
 

@@ -39,7 +39,6 @@ Luồng:
    design_voice = true
    gen_voice = true
    is_active = false
-   is_default = false
    ```
 
 8. Tạo một bản ghi `voice_clones`.
@@ -126,8 +125,7 @@ Service: `has_screen_access()`.
 
 Quy tắc:
 
-- User thường chỉ kiểm tra được chính mình.
-- User `is_default=true` có thể kiểm tra user khác.
+- User chỉ kiểm tra được chính mình.
 - Screen hỗ trợ:
   - `clone_voice` hoặc `voice_clone`.
   - `design_voice` hoặc `voice_design`.
@@ -144,6 +142,22 @@ Authorization: Bearer <token>
 
 Hàm `me()` trả user đã xác thực, gồm email, quyền, trạng thái và timestamps.
 Response không chứa password hash.
+
+### 5.6 Đăng nhập quản trị
+
+```http
+POST /api/admin/auth/login
+```
+
+Luồng quản trị không truy vấn bảng `users`:
+
+1. Chuẩn hóa username và tìm trong `user_admins`.
+2. Kiểm tra bcrypt password hash.
+3. Sai thông tin trả HTTP `401`; admin chưa active trả HTTP `403`.
+4. Thành công trả JWT có claim `account_type=admin`.
+5. `CurrentAdmin` chỉ chấp nhận token loại `admin` và truy vấn `user_admins`.
+6. `CurrentUser` chỉ chấp nhận token loại `user`, vì vậy hai token không dùng
+   thay cho nhau.
 
 ## 6. Logic Voice API
 
@@ -336,6 +350,16 @@ Hàm `main()`:
 - Commit thay đổi trong một transaction.
 
 CLI hiện chưa có option tắt quyền.
+
+Admin là loại tài khoản độc lập trong bảng `user_admins`, được tạo hoặc cập
+nhật bằng:
+
+```bash
+python -m scripts.create_admin admin --email admin@example.com
+```
+
+Admin đăng nhập qua `POST /api/admin/auth/login`. JWT trả về có claim
+`account_type=admin`; các dependency quản trị từ chối JWT user thường.
 
 ## 8. Mã HTTP và lưu ý vận hành
 
