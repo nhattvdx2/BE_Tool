@@ -58,6 +58,7 @@ class AuditLogger:
     def write(self, username: str, event: dict[str, Any]) -> None:
         payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "username": username,
             **event,
         }
         record = logging.LogRecord(

@@ -48,6 +48,18 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_current_admin(current_user: CurrentUser) -> User:
+    if not current_user.is_default:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access required",
+        )
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
+
 def get_voice_current_user(
     request: Request,
     db: DbSession,

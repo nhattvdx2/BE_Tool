@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BE Tool Admin</title>
+  <link rel="stylesheet" href="/static/admin/admin.css?v=3">
+</head>
+<body>
+  <section id="loginView" class="login-shell">
+    <div class="login-card">
+      <div class="brand-mark">BE</div>
+      <p class="eyebrow">CONTROL CENTER</p>
+      <h1>Quản trị hệ thống</h1>
+      <p class="muted">Đăng nhập bằng tài khoản có quyền quản trị.</p>
+      <form id="loginForm" class="stack">
+        <label>Tên đăng nhập<input name="username" autocomplete="username" required></label>
+        <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="loginError" class="form-error" role="alert"></p>
+        <button class="button primary" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="appView" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark small">BE</span><strong>Admin</strong></div>
+      <nav id="mainNav">
+        <button class="nav-item active" data-view="dashboard">Tổng quan</button>
+        <button class="nav-item" data-view="users">Tài khoản</button>
+        <button class="nav-item" data-view="voices">Thư viện voice</button>
+        <button class="nav-item" data-view="audit">Nhật ký</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span id="adminName"></span>
+        <button id="logoutButton" class="text-button">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><p class="eyebrow">BE TOOL</p><h2 id="pageTitle">Tổng quan</h2></div>
+        <button id="refreshButton" class="button secondary">Làm mới</button>
+      </header>
+      <div id="toast" class="toast" role="status" hidden></div>
+
+      <section id="dashboardView" class="view">
+        <div id="statsGrid" class="stats-grid"></div>
+        <div class="panel welcome-panel">
+          <div><p class="eyebrow">VẬN HÀNH</p><h3>Trung tâm quản trị</h3></div>
+          <p>Quản lý tài khoản, phân quyền và quota voice từ một nơi. Mọi request quản trị đều được ghi vào audit log.</p>
+        </div>
+      </section>
+
+      <section id="usersView" class="view" hidden>
+        <div class="toolbar panel">
+          <form id="userFilter" class="filter-form">
+            <input name="search" placeholder="Tìm username hoặc email">
+            <select name="active"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Chưa kích hoạt / đã khóa</option></select>
+            <button class="button secondary">Tìm kiếm</button>
+          </form>
+          <button id="createUserButton" class="button primary">Tạo tài khoản</button>
+        </div>
+        <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Tài khoản</th><th>Trạng thái</th><th>Quyền</th><th>Quota clone/design</th><th>Voice</th><th></th></tr></thead><tbody id="usersBody"></tbody></table></div><div id="usersPager" class="pager"></div></div>
+      </section>
+
+      <section id="voicesView" class="view" hidden>
+        <div class="toolbar panel">
+          <form id="voiceFilter" class="filter-form">
+            <input name="search" placeholder="Tìm tên voice hoặc chủ sở hữu">
+            <select name="type"><option value="">Tất cả loại</option><option value="voice-clone">Voice Clone</option><option value="voice-design">Voice Design</option></select>
+            <button class="button secondary">Tìm kiếm</button>
+          </form>
+        </div>
+        <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Voice</th><th>Chủ sở hữu</th><th>Loại</th><th>Thông tin</th><th>Ngày tạo</th><th></th></tr></thead><tbody id="voicesBody"></tbody></table></div><div id="voicesPager" class="pager"></div></div>
+      </section>
+
+      <section id="auditView" class="view" hidden>
+        <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Request</th><th>Trạng thái</th><th>Thời gian xử lý</th></tr></thead><tbody id="auditBody"></tbody></table></div></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="userDialog">
+    <form id="userForm" class="dialog-form">
+      <div class="dialog-head"><div><p class="eyebrow">TÀI KHOẢN</p><h3 id="userDialogTitle">Tạo tài khoản</h3></div><button type="button" class="icon-button" data-close-dialog>×</button></div>
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <label>Tên đăng nhập<input name="username" minlength="3" required></label>
+        <label>Email<input name="email" type="email" required></label>
+        <label id="passwordField">Mật khẩu<input name="password" type="password" minlength="8"></label>
+        <label>Clone limit<input name="clone_limit" type="number" min="0" value="0" required></label>
+        <label>Design limit<input name="design_limit" type="number" min="0" value="0" required></label>
+      </div>
+      <div class="checks">
+        <label><input name="is_active" type="checkbox" checked> Hoạt động</label>
+        <label><input name="is_default" type="checkbox"> Quản trị viên</label>
+        <label><input name="clone_voice" type="checkbox"> Voice Clone</label>
+        <label><input name="design_voice" type="checkbox" checked> Voice Design</label>
+        <label><input name="gen_voice" type="checkbox" checked> Generate Voice</label>
+      </div>
+      <p id="userFormError" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button secondary" data-close-dialog>Hủy</button><button class="button primary">Lưu thay đổi</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="passwordDialog">
+    <form id="passwordForm" class="dialog-form compact">
+      <div class="dialog-head"><h3>Đặt lại mật khẩu</h3><button type="button" class="icon-button" data-close-dialog>×</button></div>
+      <input type="hidden" name="id"><p id="passwordUser" class="muted"></p>
+      <label>Mật khẩu mới<input name="new_password" type="password" minlength="8" required></label>
+      <p id="passwordFormError" class="form-error"></p>
+      <div class="dialog-actions"><button type="button" class="button secondary" data-close-dialog>Hủy</button><button class="button primary">Đặt lại</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="audioDialog"><div class="dialog-form compact"><div class="dialog-head"><h3 id="audioTitle">Nghe voice</h3><button type="button" class="icon-button" data-close-dialog>×</button></div><audio id="audioPlayer" controls></audio></div></dialog>
+  <script src="/static/admin/admin.js?v=3" defer></script>
+</body>
+</html>

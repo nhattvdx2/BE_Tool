@@ -57,6 +57,8 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 Swagger: `http://127.0.0.1:8000/docs`
 
+Trang quản trị: `http://127.0.0.1:8000/admin`
+
 Kiểm tra tiến trình API và database/schema:
 
 ```bash
@@ -83,6 +85,17 @@ python -m scripts.create_user demo \
   --design-limit 5
 ```
 
+Để cấp quyền truy cập trang quản trị cho tài khoản đầu tiên:
+
+```bash
+python -m scripts.create_user admin --activate --admin
+```
+
+Trang quản trị dùng cờ `users.is_default` làm quyền admin. Admin có thể xem
+dashboard, tạo và cập nhật tài khoản, bật/tắt quyền, đặt quota, đặt lại mật
+khẩu, quản lý toàn bộ voice và xem audit log. Hệ thống ngăn admin tự khóa hoặc
+tự gỡ quyền quản trị của chính mình.
+
 4. Gọi `POST /api/auth/login` để nhận JWT.
 5. Gửi JWT ở header `Authorization: Bearer <access_token>`.
 
@@ -99,6 +112,13 @@ kích hoạt. Response `200` chỉ trả token cùng `id`, `username`, `clone_vo
 | POST | `/api/auth/changepassword` | JWT | Đổi mật khẩu |
 | POST | `/api/auth/acceptFuntion` | JWT | Kiểm tra quyền màn hình |
 | GET | `/api/auth/me` | JWT | Thông tin user hiện tại |
+| GET | `/api/admin/dashboard` | Admin | Thống kê hệ thống |
+| GET/POST | `/api/admin/users` | Admin | Danh sách/tạo tài khoản |
+| PATCH | `/api/admin/users/{userId}` | Admin | Quyền, trạng thái và quota |
+| POST | `/api/admin/users/{userId}/reset-password` | Admin | Đặt lại mật khẩu |
+| GET | `/api/admin/voices` | Admin | Toàn bộ thư viện voice |
+| PATCH/DELETE | `/api/admin/voices/{voiceId}` | Admin | Đổi tên/xóa voice |
+| GET | `/api/admin/audit` | Admin | Nhật ký request gần đây |
 | POST | `/api/voices/clone` | JWT | Tạo Clone Voice và upload audio |
 | POST | `/api/voices/design` | JWT | Tạo Design Voice |
 | GET | `/api/voices` | JWT | Danh sách voice có phân trang |

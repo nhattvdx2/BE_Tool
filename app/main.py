@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from time import perf_counter
 from typing import Optional, Tuple
 from uuid import uuid4
@@ -9,11 +10,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.deps import DbSession
 from app.api.router import api_router
+from app.api.routes.admin_pages import router as admin_pages_router
 from app.core.config import get_settings
 from app.core.audit import write_audit_event
 from app.core.errors import ApiError
@@ -35,6 +38,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+app.include_router(admin_pages_router)
+app.mount(
+    "/static",
+    StaticFiles(directory=Path(__file__).parent / "static"),
+    name="static",
+)
 
 
 def _token_audit_identity(request: Request) -> Tuple[str, Optional[str]]:
